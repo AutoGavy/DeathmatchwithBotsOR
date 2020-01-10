@@ -174,7 +174,7 @@ function OnGameEvent_player_say(params)
 			}
 			return;
 		case "&alien":
-			if (bOnslaught)
+			if (Convars.GetFloat("asw_horde_override"))
 			{
 				bOnslaught = 0;
 				Convars.SetValue("asw_horde_override", 0);
