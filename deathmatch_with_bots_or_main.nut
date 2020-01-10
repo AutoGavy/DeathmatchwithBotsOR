@@ -1,3 +1,18 @@
+Convars.SetValue("asw_horde_override", 1);
+Convars.SetValue("asw_wanderer_override", 1);
+const gs_DataName = "gs_dm_data";
+const strDelimiter = ":";
+bAI <- 1;
+bOnslaught <- 1;
+if (FileToString(gs_DataName) == "")
+	StringToFile(gs_DataName, "1" + strDelimiter + "1"); // AI, Onslaught
+else
+{
+	local strArrayContent = split(FileToString(gs_DataName), strDelimiter);
+	bAI = strArrayContent[0].tointeger();
+	bOnslaught = strArrayContent[1].tointeger();
+}
+
 function SetBotEmote(hBot, strEmote)
 {
 	local hTimer = Entities.CreateByClassname("logic_timer");
@@ -94,6 +109,9 @@ function OnGameEvent_marine_spawn(params)
 
 function OnGameEvent_player_fullyjoined(params)
 {
+	if (!bAI)
+		return;
+	
 	local bShouldAddBots = true;
 	local userid = null;
 	
@@ -115,6 +133,72 @@ function OnGameEvent_player_fullyjoined(params)
 		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 7\""); // medic
 		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 8\"");
 	}
+}
+
+function OnGameEvent_player_say(params)
+{
+	if (!("text" in params) || !("userid" in params))
+		return;
+	else if (params["text"] == null)
+		return;
+	
+	local userid = params["userid"];
+	local strText = params["text"].tolower();
+	
+	switch (strText)
+	{
+		case "&help":
+			DisplayMsg("==== List of Chat Commands ====\n&ai  -  Enable / Disable AI Players.\n&alien  -  Enable / Disable Onslaught.");
+			return;
+		case "&ai":
+			if (bAI)
+			{
+				bAI = 0;
+				KickBotsFunc();
+				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
+				DisplayMsg("Disabled AI Players.");
+			}
+			else
+			{
+				bAI = 1;
+				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 1\"");
+				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 2\"");
+				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 3\""); // medic
+				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 4\"");
+				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 5\"");
+				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 6\"");
+				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 7\""); // medic
+				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 8\"");
+				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
+				DisplayMsg("Enabled AI Players.");
+			}
+			return;
+		case "&alien":
+			if (bOnslaught)
+			{
+				bOnslaught = 0;
+				Convars.SetValue("asw_horde_override", 0);
+				Convars.SetValue("asw_wanderer_override", 0);
+				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
+				DisplayMsg("Disabled Onslaught.");
+			}
+			else
+			{
+				bOnslaught = 1;
+				Convars.SetValue("asw_horde_override", 1);
+				Convars.SetValue("asw_wanderer_override", 1);
+				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
+				DisplayMsg("Enabled Onslaught.");
+			}
+			return;
+	}
+}
+
+function KickBotsFunc()
+{
+	local player = null;
+	while ((player = Entities.FindByClassname(player, "player")) != null)
+		SendToServerConsole("sm_cexec #" + player.GetPlayerUserID() + " rd_bots_kick");
 }
 
 function DisplayMsg(message, delay = 0.01)
