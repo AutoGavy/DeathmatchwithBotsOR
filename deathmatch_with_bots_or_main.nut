@@ -2,6 +2,8 @@ Convars.SetValue("asw_horde_override", 1);
 Convars.SetValue("asw_wanderer_override", 1);
 const gs_DataName = "gs_dm_data";
 const strDelimiter = ":";
+asw_game_resource <- null;
+asw_game_resource <- Entities.FindByClassname(asw_game_resource, "asw_game_resource");
 bAI <- 1;
 bOnslaught <- 1;
 if (FileToString(gs_DataName) == "")
@@ -148,13 +150,15 @@ function OnGameEvent_player_say(params)
 	switch (strText)
 	{
 		case "&help":
-			DisplayMsg("==== List of Chat Commands ====\n&ai  -  Enable / Disable AI Players.\n&alien  -  Enable / Disable Onslaught.");
+			DisplayMsg("==== List of Leader Chat Commands ====\n&ai  -  Enable / Disable AI Players.\n&alien  -  Enable / Disable Onslaught.");
 			return;
 		case "&ai":
+			if (!IsLeader(userid))
+				return;
 			if (bAI)
 			{
 				bAI = 0;
-				KickBotsFunc();
+				SendToServerConsole("sm_cexec #" + userid + " rd_bots_kick");
 				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
 				DisplayMsg("Disabled AI Players.");
 			}
@@ -174,6 +178,8 @@ function OnGameEvent_player_say(params)
 			}
 			return;
 		case "&alien":
+			if (!IsLeader(userid))
+				return;
 			if (Convars.GetFloat("asw_horde_override"))
 			{
 				bOnslaught = 0;
@@ -194,11 +200,22 @@ function OnGameEvent_player_say(params)
 	}
 }
 
-function KickBotsFunc()
+function IsLeader(userid)
 {
 	local player = null;
-	while ((player = Entities.FindByClassname(player, "player")) != null)
-		SendToServerConsole("sm_cexec #" + player.GetPlayerUserID() + " rd_bots_kick");
+	while((player = Entities.FindByClassname(player, "player")) != null)
+	{
+		if (player.GetPlayerUserID() == userid)
+		{
+			if (player != NetProps.GetPropEntity(asw_game_resource, "m_Leader"))
+			{
+				DisplayMsg("You are not the leader.", 0);
+				return false;
+			}
+			else
+				return true;
+		}
+	}
 }
 
 function DisplayMsg(message, delay = 0.01)
