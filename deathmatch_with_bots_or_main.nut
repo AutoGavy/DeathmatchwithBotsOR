@@ -1,11 +1,27 @@
 Convars.SetValue("asw_horde_override", 1);
 Convars.SetValue("asw_wanderer_override", 1);
+Convars.SetValue("rd_carnage_scale", 2);
 const gs_DataName = "gs_dm_data";
 const strDelimiter = ":";
 asw_game_resource <- null;
 asw_game_resource <- Entities.FindByClassname(asw_game_resource, "asw_game_resource");
 bAI <- 1;
 bOnslaught <- 1;
+alienNamesArray <- [
+"asw_drone",
+"asw_buzzer",
+"asw_parasite",
+"asw_shieldbug",
+"asw_drone_jumper",
+"asw_harvester",
+"asw_parasite_defanged",
+"asw_boomer",
+"asw_ranger",
+"asw_mortarbug",
+"asw_shaman",
+"asw_drone_uber",
+"asw_alien_goo"
+];
 if (FileToString(gs_DataName) == "")
 	StringToFile(gs_DataName, "1" + strDelimiter + "1"); // AI, Onslaught
 else
@@ -44,7 +60,7 @@ function OnTakeDamage_Alive_Any(hVictim, hInflictor, hAttacker, hWeapon, iDamage
 {
 	if (hAttacker != null && hVictim != null)
 	{
-		if (hAttacker.GetClassname() == "asw_shieldbug" && hVictim.GetClassname() == "asw_marine" && !hVictim.IsInhabited())
+		if (hAttacker.IsAlien() && hVictim.GetClassname() == "asw_marine" && !hVictim.IsInhabited())
 		{
 			if (RandomInt(0, 1))
 				SetBotEmote(hVictim, "bEmoteQuestion");
@@ -68,11 +84,11 @@ function OnGameEvent_entity_killed(params)
 	
 	if (hVictim.GetClassname() == "asw_marine" && hAttacker.GetClassname() == "asw_marine" && !hAttacker.IsInhabited())
 	{
-		local iTemp = RandomInt(0, 4);
+		local iTemp = RandomInt(0, 3);
 		if (iTemp < 2)
 		{
 			if (iTemp)
-			SetBotEmote(hAttacker, "bEmoteSmile");
+				SetBotEmote(hAttacker, "bEmoteSmile");
 			else
 				SetBotEmote(hAttacker, "bEmoteAnimeSmile");
 		}
@@ -185,6 +201,8 @@ function OnGameEvent_player_say(params)
 				bOnslaught = 0;
 				Convars.SetValue("asw_horde_override", 0);
 				Convars.SetValue("asw_wanderer_override", 0);
+				Convars.SetValue("rd_carnage_scale", 1);
+				RemoveAliens();
 				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
 				DisplayMsg("Disabled Onslaught.");
 			}
@@ -193,10 +211,21 @@ function OnGameEvent_player_say(params)
 				bOnslaught = 1;
 				Convars.SetValue("asw_horde_override", 1);
 				Convars.SetValue("asw_wanderer_override", 1);
+				Convars.SetValue("rd_carnage_scale", 2);
 				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
 				DisplayMsg("Enabled Onslaught.");
 			}
 			return;
+	}
+}
+
+function RemoveAliens()
+{
+	foreach (strClassname in alienNamesArray)
+	{
+		local hAlien = null;
+		while ((hAlien = Entities.FindByClassname(hAlien, strClassname)) != null)
+			hAlien.Destroy();
 	}
 }
 
@@ -261,7 +290,7 @@ function WeaponSpawner(marineName)
 	}
 	else if (marineName == "Faith" || marineName == "Bastille")
 	{
-		weaponNamesArray.push("asw_weapon_healamp_gun");
+		weaponNamesArray.push("asw_weapon_medrifle");
 		return weaponNamesArray[RandomInt(0, 7)];
 	}
 	else if (marineName == "Crash" || marineName == "Vegas")
