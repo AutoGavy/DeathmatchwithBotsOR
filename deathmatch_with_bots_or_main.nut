@@ -1,31 +1,38 @@
+Convars.SetValue("asw_skill", 3);
+Convars.SetValue("asw_marine_ff_absorption", 0);
 Convars.SetValue("asw_horde_override", 1);
 Convars.SetValue("asw_wanderer_override", 1);
 Convars.SetValue("rd_carnage_scale", 2);
+
 const gs_DataName = "gs_dm_data";
 const strDelimiter = ":";
+
 asw_game_resource <- null;
 asw_game_resource <- Entities.FindByClassname(asw_game_resource, "asw_game_resource");
+
 bAI <- 1;
 bOnslaught <- 1;
+
 alienNamesArray <- [
-"asw_drone",
-"asw_buzzer",
-"asw_parasite",
-"asw_shieldbug",
-"asw_drone_jumper",
-"asw_harvester",
-"asw_parasite_defanged",
-"asw_boomer",
-"asw_ranger",
-"asw_mortarbug",
-"asw_shaman",
-"asw_drone_uber",
-"asw_alien_goo"
+	"asw_drone",
+	"asw_buzzer",
+	"asw_parasite",
+	"asw_shieldbug",
+	"asw_drone_jumper",
+	"asw_harvester",
+	"asw_parasite_defanged",
+	"asw_boomer",
+	"asw_ranger",
+	"asw_mortarbug",
+	"asw_shaman",
+	"asw_drone_uber",
+	"asw_alien_goo"
 ];
-if (FileToString(gs_DataName) == "")
+
+if (FileToString(gs_DataName) == "") {
 	StringToFile(gs_DataName, "1" + strDelimiter + "1"); // AI, Onslaught
-else
-{
+}
+else {
 	local strArrayContent = split(FileToString(gs_DataName), strDelimiter);
 	bAI = strArrayContent[0].tointeger();
 	bOnslaught = strArrayContent[1].tointeger();
@@ -41,8 +48,7 @@ function SetBotEmote(hBot, strEmote)
 	
 	hTimerScope.hBot <- hBot;
 	hTimerScope.strEmote <- strEmote;
-	hTimerScope.TimerFunc <- function()
-	{
+	hTimerScope.TimerFunc <- function() {
 		NetProps.SetPropInt(hBot, strEmote, 1);
 		self.DisconnectOutput("OnTimer", "TimerFunc");
 		self.Destroy();
@@ -58,14 +64,21 @@ function OnGameplayStart()
 
 function OnTakeDamage_Alive_Any(hVictim, hInflictor, hAttacker, hWeapon, iDamage, damageType, ammoName) 
 {
-	if (hAttacker != null && hVictim != null)
-	{
-		if (hAttacker.IsAlien() && hVictim.GetClassname() == "asw_marine" && !hVictim.IsInhabited())
-		{
-			if (RandomInt(0, 1))
+	if (hAttacker != null && hVictim != null) {
+		if (hAttacker.IsAlien() && hVictim.GetClassname() == "asw_marine" && !hVictim.IsInhabited()) {
+			if (RandomInt(0, 1)) {
 				SetBotEmote(hVictim, "bEmoteQuestion");
+			}
 		}
 	}
+
+	if (hVictim != null && hVictim.GetClassname() == "asw_marine" && !hVictim.IsInhabited() &&
+		iDamage >= hVictim.GetHealth()) {
+		hVictim.RemoveWeapon(0);
+		hVictim.RemoveWeapon(1);
+		hVictim.RemoveWeapon(2);
+	}
+
 	return iDamage;
 }
 
@@ -74,23 +87,27 @@ function OnGameEvent_entity_killed(params)
 	local hVictim = null;
 	local hAttacker = null;
 	
-	if ("entindex_killed" in params)
+	if ("entindex_killed" in params) {
 		hVictim = EntIndexToHScript(params["entindex_killed"]);
-	if ("entindex_attacker" in params)
+	}
+	if ("entindex_attacker" in params) {
 		hAttacker = EntIndexToHScript(params["entindex_attacker"]);
-	
-	if (!hVictim || !hAttacker)
+	}
+
+	if (!hVictim || !hAttacker) {
 		return;
-	
-	if (hVictim.GetClassname() == "asw_marine" && hAttacker.GetClassname() == "asw_marine" && !hAttacker.IsInhabited())
-	{
+	}
+
+	if (hVictim.GetClassname() == "asw_marine" && hAttacker.GetClassname() == "asw_marine" &&
+		!hAttacker.IsInhabited()) {
 		local iTemp = RandomInt(0, 3);
-		if (iTemp < 2)
-		{
-			if (iTemp)
+		if (iTemp < 2) {
+			if (iTemp) {
 				SetBotEmote(hAttacker, "bEmoteSmile");
-			else
+			}
+			else {
 				SetBotEmote(hAttacker, "bEmoteAnimeSmile");
+			}
 		}
 	}
 }
@@ -99,11 +116,13 @@ function OnGameEvent_marine_spawn(params)
 {
 	local hBot = null;
 	
-	if ("entindex" in params)
+	if ("entindex" in params) {
 		hBot = EntIndexToHScript(params["entindex"]);
+	}
 	
-	if (hBot.IsInhabited())
+	if (hBot.IsInhabited()) {
 		return;
+	}
 	
 	hBot.RemoveWeapon(0);
 	hBot.GiveWeapon(WeaponSpawner(hBot.GetMarineName()), 0);
@@ -115,8 +134,7 @@ function OnGameEvent_marine_spawn(params)
 	local hTimerScope = hTimer.GetScriptScope();
 	
 	hTimerScope.hBot <- hBot;
-	hTimerScope.TimerFunc <- function()
-	{
+	hTimerScope.TimerFunc <- function() {
 		hBot.RemoveWeapon(1);
 		self.DisconnectOutput("OnTimer", "TimerFunc");
 		self.Destroy();
@@ -127,77 +145,77 @@ function OnGameEvent_marine_spawn(params)
 
 function OnGameEvent_player_fullyjoined(params)
 {
-	if (!bAI)
+	if (!bAI) {
 		return;
+	}
 	
 	local bShouldAddBots = true;
 	local userid = null;
 	
-	if ("userid" in params)
+	if ("userid" in params) {
 		userid = params["userid"];
+	}
+	else {
+		return;
+	}
 	
 	local hMarine = null;
-	while ((hMarine = Entities.FindByClassname(hMarine, "asw_marine")) != null)
+	while ((hMarine = Entities.FindByClassname(hMarine, "asw_marine")) != null) {
 		bShouldAddBots = false;
+	}
 	
-	if (bShouldAddBots)
-	{
-		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 1\"");
-		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 2\"");
-		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 3\""); // medic
-		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 4\"");
-		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 5\"");
-		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 6\"");
-		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 7\""); // medic
-		SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 8\"");
+	if (bShouldAddBots) {
+		for (local i = 1; i <= 8; ++i) {
+			SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd " + i + "\"");
+		}
+		/*for (local i = 1; i <= 8; ++i) {
+			SendToServerConsole("rd_botadd " + i);
+		}*/
 	}
 }
 
 function OnGameEvent_player_say(params)
 {
-	if (!("text" in params) || !("userid" in params))
+	if (!("text" in params) || !("userid" in params)) {
 		return;
-	else if (params["text"] == null)
+	}
+	else if (params["text"] == null) {
 		return;
+	}
 	
 	local userid = params["userid"];
 	local strText = params["text"].tolower();
 	
-	switch (strText)
-	{
+	switch (strText) {
 		case "&help":
 			DisplayMsg("==== List of Leader Chat Commands ====\n&ai  -  Enable / Disable AI Players.\n&alien  -  Enable / Disable Onslaught.");
 			return;
+
 		case "&ai":
-			if (!IsLeader(userid))
+			if (!IsLeader(userid)) {
 				return;
-			if (bAI)
-			{
+			}
+			if (bAI) {
 				bAI = 0;
 				SendToServerConsole("sm_cexec #" + userid + " rd_bots_kick");
 				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
 				DisplayMsg("Disabled AI Players.");
 			}
-			else
-			{
+			else {
 				bAI = 1;
-				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 1\"");
-				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 2\"");
-				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 3\""); // medic
-				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 4\"");
-				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 5\"");
-				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 6\"");
-				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 7\""); // medic
-				SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd 8\"");
+				for (local i = 1; i <= 8; ++i) {
+					SendToServerConsole("sm_cexec #" + userid + " \"rd_botadd " + i + "\"");
+				}
 				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
 				DisplayMsg("Enabled AI Players.");
 			}
 			return;
+
 		case "&alien":
-			if (!IsLeader(userid))
+			if (!IsLeader(userid)) {
 				return;
-			if (Convars.GetFloat("asw_horde_override"))
-			{
+			}
+			if (Convars.GetFloat("asw_horde_override")) {
 				bOnslaught = 0;
 				Convars.SetValue("asw_horde_override", 0);
 				Convars.SetValue("asw_wanderer_override", 0);
@@ -206,8 +224,7 @@ function OnGameEvent_player_say(params)
 				StringToFile(gs_DataName, bAI.tostring() + strDelimiter + bOnslaught.tostring());
 				DisplayMsg("Disabled Onslaught.");
 			}
-			else
-			{
+			else {
 				bOnslaught = 1;
 				Convars.SetValue("asw_horde_override", 1);
 				Convars.SetValue("asw_wanderer_override", 1);
@@ -221,36 +238,33 @@ function OnGameEvent_player_say(params)
 
 function RemoveAliens()
 {
-	foreach (strClassname in alienNamesArray)
-	{
+	foreach (strClassname in alienNamesArray) {
 		local hAlien = null;
-		while ((hAlien = Entities.FindByClassname(hAlien, strClassname)) != null)
+		while ((hAlien = Entities.FindByClassname(hAlien, strClassname)) != null) {
 			hAlien.Destroy();
+		}
 	}
 }
 
 function IsLeader(userid)
 {
 	local player = null;
-	while((player = Entities.FindByClassname(player, "player")) != null)
-	{
-		if (player.GetPlayerUserID() == userid)
-		{
-			if (player != NetProps.GetPropEntity(asw_game_resource, "m_Leader"))
-			{
+	while((player = Entities.FindByClassname(player, "player")) != null) {
+		if (player.GetPlayerUserID() == userid) {
+			if (player != NetProps.GetPropEntity(asw_game_resource, "m_Leader")) {
 				DisplayMsg("You are not the leader.", 0);
 				return false;
 			}
-			else
+			else {
 				return true;
+			}
 		}
 	}
 }
 
 function DisplayMsg(message, delay = 0.01)
 {
-	if (!delay)
-	{
+	if (!delay) {
 		local player = null;
 		while ((player = Entities.FindByClassname(player, "player")) != null)
 			ClientPrint(player, 3, message);
@@ -263,8 +277,7 @@ function DisplayMsg(message, delay = 0.01)
 	local timerScope = timer.GetScriptScope();
 	
 	timerScope.message <- message;
-	timerScope.TimerFunc <- function()
-	{
+	timerScope.TimerFunc <- function() {
 		local player = null;
 		while ((player = Entities.FindByClassname(player, "player")) != null)
 			ClientPrint(player, 3, message);
@@ -277,27 +290,33 @@ function DisplayMsg(message, delay = 0.01)
 
 function WeaponSpawner(marineName)
 {
-	local weaponNamesArray = ["asw_weapon_rifle", "asw_weapon_railgun", "asw_weapon_pdw", "asw_weapon_sniper_rifle", "asw_weapon_grenade_launcher", "asw_weapon_combat_rifle", "asw_weapon_heavy_rifle"];
-	if (marineName == "Sarge" || marineName == "Jaeger")
-	{
+	local weaponNamesArray = [
+		"asw_weapon_rifle",
+		"asw_weapon_railgun",
+		"asw_weapon_pdw",
+		"asw_weapon_sniper_rifle",
+		"asw_weapon_grenade_launcher",
+		"asw_weapon_combat_rifle",
+		"asw_weapon_heavy_rifle"
+	];
+
+	if (marineName == "Sarge" || marineName == "Jaeger") {
 		return weaponNamesArray[RandomInt(0, 6)];
 	}
-	else if (marineName == "Wildcat" || marineName == "Wolfe")
-	{
+	else if (marineName == "Wildcat" || marineName == "Wolfe") {
 		weaponNamesArray.push("asw_weapon_autogun");
 		weaponNamesArray.push("asw_weapon_minigun");
 		return weaponNamesArray[RandomInt(0, 8)];
 	}
-	else if (marineName == "Faith" || marineName == "Bastille")
-	{
+	else if (marineName == "Faith" || marineName == "Bastille") {
 		weaponNamesArray.push("asw_weapon_medrifle");
 		return weaponNamesArray[RandomInt(0, 7)];
 	}
-	else if (marineName == "Crash" || marineName == "Vegas")
-	{
+	else if (marineName == "Crash" || marineName == "Vegas") {
 		weaponNamesArray.push("asw_weapon_prifle");
 		return weaponNamesArray[RandomInt(0, 7)];
 	}
+
 	return "asw_weapon_rifle";
 }
 
@@ -310,19 +329,20 @@ function LoopFunc()
 	local hTimerScope = hTimer.GetScriptScope();
 	
 	hTimerScope.LoopFunc <- LoopFunc;
-	hTimerScope.TimerFunc <- function()
-	{
+	hTimerScope.TimerFunc <- function() {
 		local hParas = null;
-		while ((hParas = Entities.FindByClassname(hParas, "asw_parasite")) != null)
+		while ((hParas = Entities.FindByClassname(hParas, "asw_parasite")) != null) {
 			hParas.Destroy();
-		local hBot = null;
-		while ((hBot = Entities.FindByClassname(hBot, "asw_marine")) != null)
-		{
-			if (!hBot.IsInhabited())
-				NetProps.SetPropInt(hBot, "m_ASWOrders", 3);
 		}
-		LoopFunc();
+
+		local hBot = null;
+		while ((hBot = Entities.FindByClassname(hBot, "asw_marine")) != null) {
+			if (!hBot.IsInhabited()) {
+				NetProps.SetPropInt(hBot, "m_ASWOrders", 3);
+			}
+		}
 		
+		LoopFunc();
 		self.DisconnectOutput("OnTimer", "TimerFunc");
 		self.Destroy();
 	}
